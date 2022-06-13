@@ -8,14 +8,24 @@ import re
 class QF:
 
     def __init__(self, rid):
+        """
+        搜狐千帆直播可以直接在网页源码里找到播放地址
+        Args:
+            rid: 数字直播间号
+        """
         self.rid = rid
+        self.s = requests.Session()
 
     def get_real_url(self):
         try:
-            response = requests.post(url='https://qf.56.com/' + self.rid).text
-            real_url = re.findall(r"flvUrl:'(.*)\?wsSecret", response)
-            real_url = real_url[0]
-        except:
+            res = self.s.get(f'https://qf.56.com/{self.rid}').text
+            flvurl = re.search(r"flvUrl:'(.*)?'", res).group(1)
+            if 'flv' in flvurl:
+                real_url = flvurl
+            else:
+                res = self.s.get(flvurl).json()
+                real_url = res['url']
+        except Exception:
             raise Exception('直播间不存在或未开播')
         return real_url
 

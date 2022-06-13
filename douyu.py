@@ -1,4 +1,5 @@
-# 获取斗鱼直播间的真实流媒体地址，默认最高画质。
+# 获取斗鱼直播间的真实流媒体地址，默认最高画质
+# 使用 https://github.com/wbt5/real-url/issues/185 中两位大佬@wjxgzz @4bbu6j5885o3gpv6ss8找到的的CDN，在此感谢！
 import hashlib
 import re
 import time
@@ -8,16 +9,30 @@ import requests
 
 
 class DouYu:
+    """
+    可用来替换返回链接中的主机部分
+    两个阿里的CDN：
+    dyscdnali1.douyucdn.cn
+    dyscdnali3.douyucdn.cn
+    墙外不用带尾巴的akm cdn：
+    hls3-akm.douyucdn.cn
+    hlsa-akm.douyucdn.cn
+    hls1a-akm.douyucdn.cn
+    """
 
     def __init__(self, rid):
-        # 房间号通常为1~7位纯数字，浏览器地址栏中看到的房间号不一定是真实rid.
+        """
+        房间号通常为1~8位纯数字，浏览器地址栏中看到的房间号不一定是真实rid.
+        Args:
+            rid:
+        """
         self.did = '10000000000000000000000000001501'
         self.t10 = str(int(time.time()))
         self.t13 = str(int((time.time() * 1000)))
 
         self.s = requests.Session()
         self.res = self.s.get('https://m.douyu.com/' + str(rid)).text
-        result = re.search(r'rid":(\d{1,7}),"vipId', self.res)
+        result = re.search(r'rid":(\d{1,8}),"vipId', self.res)
 
         if result:
             self.rid = result.group(1)
@@ -46,7 +61,7 @@ class DouYu:
         key = ''
         if data:
             rtmp_live = data['rtmp_live']
-            key = re.search(r'(\d{1,7}[0-9a-zA-Z]+)_?\d{0,4}(/playlist|.m3u8)', rtmp_live).group(1)
+            key = re.search(r'(\d{1,8}[0-9a-zA-Z]+)_?\d{0,4}(/playlist|.m3u8)', rtmp_live).group(1)
         return error, key
 
     def get_js(self):
@@ -68,7 +83,7 @@ class DouYu:
 
         url = 'https://m.douyu.com/api/room/ratestream'
         res = self.s.post(url, params=params).text
-        key = re.search(r'(\d{1,7}[0-9a-zA-Z]+)_?\d{0,4}(.m3u8|/playlist)', res).group(1)
+        key = re.search(r'(\d{1,8}[0-9a-zA-Z]+)_?\d{0,4}(.m3u8|/playlist)', res).group(1)
 
         return key
 
@@ -111,8 +126,10 @@ class DouYu:
             raise Exception('房间未开播')
         else:
             key = self.get_js()
-        return "http://tx2play1.douyucdn.cn/live/{}.flv?uuid=".format(key)
-
+        real_url = {}
+        real_url["flv"] = "http://dyscdnali1.douyucdn.cn/live/{}.flv?uuid=".format(key)
+        real_url["x-p2p"] = "http://tx2play1.douyucdn.cn/live/{}.xs?uuid=".format(key)
+        return real_url
 
 if __name__ == '__main__':
     r = input('输入斗鱼直播间号：\n')
